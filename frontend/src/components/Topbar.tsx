@@ -1,4 +1,5 @@
-import { useState } from "react";
+import { useEffect, useState, type FormEvent } from "react";
+import { useLocation, useNavigate, useSearchParams } from "react-router-dom";
 import { Icon } from "./Icon";
 import { useAuth } from "@/context/AuthContext";
 
@@ -6,9 +7,48 @@ interface TopbarProps {
   onMenuClick: () => void;
 }
 
+const SEARCHABLE_PATHS = ["/products", "/customers", "/orders"];
+
 export function Topbar({ onMenuClick }: TopbarProps) {
   const { user, logout } = useAuth();
+  const navigate = useNavigate();
+  const location = useLocation();
+  const [params, setParams] = useSearchParams();
   const [menuOpen, setMenuOpen] = useState(false);
+
+  const onSearchablePage = SEARCHABLE_PATHS.includes(location.pathname);
+  const [term, setTerm] = useState(params.get("q") ?? "");
+
+  // Keep the input in sync with the URL (e.g. when navigating between pages).
+  useEffect(() => {
+    setTerm(params.get("q") ?? "");
+  }, [params, location.pathname]);
+
+  const writeParam = (value: string) => {
+    const next = new URLSearchParams(params);
+    if (value) next.set("q", value);
+    else next.delete("q");
+    setParams(next, { replace: true });
+  };
+
+  const handleChange = (value: string) => {
+    setTerm(value);
+    // On a list page, filter live; elsewhere we wait for submit.
+    if (onSearchablePage) writeParam(value);
+  };
+
+  const handleSubmit = (e: FormEvent) => {
+    e.preventDefault();
+    // From a non-list page (e.g. Dashboard), jump to Products with the query.
+    if (!onSearchablePage) {
+      navigate(`/products?q=${encodeURIComponent(term.trim())}`);
+    }
+  };
+
+  const placeholder = onSearchablePage
+    ? `Search ${location.pathname.replace("/", "")}...`
+    : "Search products...";
+
   const initials = (user?.full_name ?? "A")
     .split(" ")
     .map((w) => w[0])
@@ -26,14 +66,16 @@ export function Topbar({ onMenuClick }: TopbarProps) {
         >
           <Icon name="menu" />
         </button>
-        <div className="hidden sm:flex items-center w-full max-w-md relative">
+        <form onSubmit={handleSubmit} className="hidden sm:flex items-center w-full max-w-md relative">
           <Icon name="search" className="absolute left-3 text-outline text-[20px]" />
           <input
             className="w-full bg-surface-container-lowest border border-outline-variant rounded-lg pl-10 pr-4 py-2 text-on-surface focus:outline-none focus:border-primary focus:ring-2 focus:ring-primary/20 font-body-sm text-body-sm transition-all"
-            placeholder="Search inventory, orders..."
+            placeholder={placeholder}
             type="text"
+            value={term}
+            onChange={(e) => handleChange(e.target.value)}
           />
-        </div>
+        </form>
       </div>
 
       <div className="flex items-center gap-2">

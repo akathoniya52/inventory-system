@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useMemo, useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { ordersApi } from "@/api/endpoints";
@@ -10,6 +10,7 @@ import { EmptyState } from "@/components/EmptyState";
 import { StatusBadge } from "@/components/StatusBadge";
 import { ConfirmDialog } from "@/components/ConfirmDialog";
 import { useToast } from "@/context/ToastContext";
+import { useSearchQuery } from "@/hooks/useSearchQuery";
 import { formatCurrency, formatDate } from "@/lib/format";
 import type { OrderListItem } from "@/types";
 
@@ -17,12 +18,24 @@ export function OrdersPage() {
   const { notify } = useToast();
   const navigate = useNavigate();
   const queryClient = useQueryClient();
+  const [search, setSearch] = useSearchQuery();
   const [deleting, setDeleting] = useState<OrderListItem | null>(null);
 
   const { data: orders = [], isLoading } = useQuery({
     queryKey: ["orders"],
     queryFn: ordersApi.list,
   });
+
+  const filtered = useMemo(() => {
+    const q = search.trim().toLowerCase();
+    if (!q) return orders;
+    return orders.filter(
+      (o) =>
+        o.order_number.toLowerCase().includes(q) ||
+        (o.customer?.full_name ?? "").toLowerCase().includes(q) ||
+        (o.customer?.email ?? "").toLowerCase().includes(q),
+    );
+  }, [orders, search]);
 
   const deleteMutation = useMutation({
     mutationFn: (id: number) => ordersApi.remove(id),
@@ -53,6 +66,18 @@ export function OrdersPage() {
       />
 
       <div className="bg-surface-container-lowest border border-outline-variant rounded-xl shadow-sm overflow-hidden">
+        <div className="p-lg border-b border-outline-variant">
+          <div className="relative max-w-sm">
+            <Icon name="search" className="absolute left-3 top-1/2 -translate-y-1/2 text-outline text-[20px]" />
+            <input
+              value={search}
+              onChange={(e) => setSearch(e.target.value)}
+              placeholder="Search by order # or customer..."
+              className="w-full bg-surface-container-low border border-outline-variant rounded-lg pl-10 pr-4 py-2 text-on-surface focus:outline-none focus:border-primary focus:ring-2 focus:ring-primary/20 font-body-sm text-body-sm"
+            />
+          </div>
+        </div>
+
         {isLoading ? (
           <PageLoader />
         ) : orders.length === 0 ? (
@@ -61,6 +86,8 @@ export function OrdersPage() {
             title="No orders yet"
             description="Create your first order to get started."
           />
+        ) : filtered.length === 0 ? (
+          <EmptyState icon="search_off" title="No matching orders" description="Try a different search." />
         ) : (
           <div className="w-full overflow-x-auto custom-scrollbar">
             <table className="w-full text-left border-collapse">
@@ -76,7 +103,7 @@ export function OrdersPage() {
                 </tr>
               </thead>
               <tbody className="font-body-md text-body-md text-on-surface">
-                {orders.map((o) => (
+                {filtered.map((o) => (
                   <tr key={o.id} className="border-b border-outline-variant/50 hover:bg-surface transition-colors">
                     <td className="py-3 px-6 font-medium">
                       <Link to={`/orders/${o.id}`} className="text-primary hover:underline">

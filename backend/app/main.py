@@ -1,3 +1,4 @@
+import asyncio
 import logging
 from contextlib import asynccontextmanager
 
@@ -8,6 +9,7 @@ from fastapi.responses import JSONResponse
 
 from app.core.config import settings
 from app.core.database import Base, SessionLocal, engine
+from app.core.keepalive import run_keepalive
 from app.routers import auth, customers, dashboard, orders, products
 from app.seed import seed
 
@@ -28,7 +30,20 @@ async def lifespan(app: FastAPI):
         db.rollback()
     finally:
         db.close()
-    yield
+
+    # Start the keep-alive scheduler as a background task.
+    keepalive_stop = asyncio.Event()
+    keepalive_task: asyncio.Task | None = None
+    if settings.KEEPALIVE_ENABLED:
+        keepalive_task = asyncio.create_task(run_keepalive(keepalive_stop))
+
+    try:
+        yield
+    finally:
+        # Signal the scheduler to stop and wait for it to finish.
+        keepalive_stop.set()
+        if keepalive_task is not None:
+            await keepalive_task
 
 
 app = FastAPI(

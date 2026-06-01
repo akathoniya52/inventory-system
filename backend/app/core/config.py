@@ -30,9 +30,25 @@ class Settings(BaseSettings):
     # Inventory
     DEFAULT_LOW_STOCK_THRESHOLD: int = 10
 
+    # Port the app listens on (Render/Railway inject this).
+    PORT: int = 8000
+
+    # Keep-alive scheduler: periodically pings an endpoint so free hosts
+    # (Render/Railway/Fly) don't spin the service down for inactivity.
+    KEEPALIVE_ENABLED: bool = True
+    KEEPALIVE_INTERVAL_SECONDS: int = 40
+    # Leave empty to self-ping /health. In production set this to the service's
+    # PUBLIC url (e.g. https://your-app.onrender.com/health) so external traffic
+    # is generated — an internal localhost ping alone won't keep the host awake.
+    KEEPALIVE_URL: str = ""
+
     @property
     def cors_origins_list(self) -> list[str]:
         return [o.strip() for o in self.CORS_ORIGINS.split(",") if o.strip()]
+
+    @property
+    def keepalive_target(self) -> str:
+        return self.KEEPALIVE_URL.strip() or f"http://localhost:{self.PORT}/health"
 
 
 @lru_cache

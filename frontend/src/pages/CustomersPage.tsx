@@ -8,6 +8,7 @@ import { PageLoader } from "@/components/Spinner";
 import { EmptyState } from "@/components/EmptyState";
 import { ConfirmDialog } from "@/components/ConfirmDialog";
 import { useToast } from "@/context/ToastContext";
+import { useSearchQuery } from "@/hooks/useSearchQuery";
 import { formatDateShort } from "@/lib/format";
 import type { Customer } from "@/types";
 import { CustomerFormModal } from "@/components/CustomerFormModal";
@@ -15,7 +16,7 @@ import { CustomerFormModal } from "@/components/CustomerFormModal";
 export function CustomersPage() {
   const { notify } = useToast();
   const queryClient = useQueryClient();
-  const [search, setSearch] = useState("");
+  const [search, setSearch] = useSearchQuery();
   const [formOpen, setFormOpen] = useState(false);
   const [deleting, setDeleting] = useState<Customer | null>(null);
 

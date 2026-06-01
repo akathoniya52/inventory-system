@@ -26,6 +26,9 @@ services:
       ADMIN_EMAIL: ${ADMIN_EMAIL:-admin@inventorypro.com}
       ADMIN_PASSWORD: ${ADMIN_PASSWORD:-admin123}
       CORS_ORIGINS: ${CORS_ORIGINS:-http://localhost:5173,http://localhost:3000}
+      KEEPALIVE_ENABLED: ${KEEPALIVE_ENABLED:-true}
+      KEEPALIVE_INTERVAL_SECONDS: ${KEEPALIVE_INTERVAL_SECONDS:-40}
+      KEEPALIVE_URL: ${KEEPALIVE_URL:-}
     ports:
       - "8000:8000"
     depends_on:

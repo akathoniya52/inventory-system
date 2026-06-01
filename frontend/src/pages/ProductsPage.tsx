@@ -9,6 +9,7 @@ import { EmptyState } from "@/components/EmptyState";
 import { StockBadge } from "@/components/StatusBadge";
 import { ConfirmDialog } from "@/components/ConfirmDialog";
 import { useToast } from "@/context/ToastContext";
+import { useSearchQuery } from "@/hooks/useSearchQuery";
 import { formatCurrency } from "@/lib/format";
 import type { Product } from "@/types";
 import { ProductFormModal } from "@/components/ProductFormModal";
@@ -16,7 +17,7 @@ import { ProductFormModal } from "@/components/ProductFormModal";
 export function ProductsPage() {
   const { notify } = useToast();
   const queryClient = useQueryClient();
-  const [search, setSearch] = useState("");
+  const [search, setSearch] = useSearchQuery();
   const [formOpen, setFormOpen] = useState(false);
   const [editing, setEditing] = useState<Product | null>(null);
   const [deleting, setDeleting] = useState<Product | null>(null);
